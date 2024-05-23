@@ -69,10 +69,12 @@ $ python git_extract.py example/.git/ 一个本地的 .git 路径
     
     完善文件解析输出详情
 
-### 待做
+- 2024-05-23：
+    
+    添加 Python3 支持
+    {更新 urllib 代码.
+    对字节数据加解码以适应 Python3 部分方法更新}
 
-- 解析其他版本的 git 文件格式，目前支持 version 2
-- pack 文件的 ofs_delta, ref_delta 类型文件的重建
 
 ### 参考
 - [pack 文件格式](https://git-scm.com/docs/pack-format) 
