@@ -47,20 +47,36 @@ class GitExtract(object):
 
     def download_file(self, path, big_file=False):
         if os.path.exists(path):
-            return open(path, 'rb').read()
+            try:
+                data = open(path, 'r').read()
+            except:
+                data = open(path, 'rb').read()
+            return data    
+            
         if self.local:
             return
         url = self.git_host + path
+        print("****************************************************************************")
+        print(url)
+        print("****************************************************************************")
         if big_file:
             _print('[*] Download {}'.format(path))
         try:
             resp = http_resp(url)
             if resp.getcode() == 200:
                 data = resp.read()
+                try:
+                    data = data.decode()
+                except:
+                    pass
                 _mkdir(path)
-                open(path, 'wb').write(data)
+                if isinstance(data, str):
+                    open(path, 'w').write(data)
+                else:
+                    open(path, 'wb').write(data)
                 return data
         except Exception as e:
+            print(e)
             # _print('[-] File not exist {} '.format(path), 'red')
             pass
 
@@ -73,7 +89,12 @@ class GitExtract(object):
         try:
             data = zlib.decompress(file)
             _type, _len, _file = re.findall(
-                r'^(tag|blob|tree|commit) (\d+?)\x00(.*)', data, re.S | re.M)[0]
+                rb'^(tag|blob|tree|commit) (\d+?)\x00(.*)', data, re.S | re.M)[0]
+            _type = _type.decode()
+            _len = _len.decode()
+            print("****************************************************************************")
+            print(_file)
+            print("****************************************************************************")
             if int(_len) == len(_file):
                 self.objects[_hash] = _type
                 return _type, _len, _file
@@ -96,13 +117,17 @@ class GitExtract(object):
     def git_ls_tree(self, _hash):
         tree = self.git_object_parse(_hash)
         try:
-            tree = set(re.findall(r'(\d{5,6}) (.*?)\x00(.{20})', tree[2], re.M | re.S))
+            tree = set(re.findall(rb'(\d{5,6}) (.*?)\x00(.{20})', tree[2], re.M | re.S))
         except TypeError:
             tree = set()
         tree_result = set()
         for _mode, _path, _hash in tree:
-            _type = self.git_file_type(_mode)
-            _hash = _hash.encode('hex')
+            _type = self.git_file_type(_mode.decode())
+            _path = _path.decode()
+            try:
+                _hash = _hash.hex()
+            except Exception as e:
+                print(e)
             tree_result.add((_type, _hash, _path))
         return tree_result
 
@@ -171,8 +196,10 @@ class GitExtract(object):
         for ref in refs:
             try:
                 ref_hash = self.download_file(ref).strip()
+                print(ref_hash)
                 _print('[+] Extract Ref {} {}'.format(ref, ref_hash[:6]), 'green')
                 data = self.git_object_parse(ref_hash)
+                
                 if data[0] == 'commit':
                     self.git_commit(ref_hash, data)
                 elif data[0] == 'tag':
@@ -183,6 +210,8 @@ class GitExtract(object):
     def git_extract_by_hash(self, data, type_list=['commit', 'tree', 'tag', 'blob']):
         if not data:
             return
+        if isinstance(data, bytes):
+            data = data.decode()
         data_hash = set(re.findall(r'[0-9a-z]{40}', data)) - set(self.objects.keys())
         if '0'*40 in data_hash:
             data_hash.remove('0'*40)
