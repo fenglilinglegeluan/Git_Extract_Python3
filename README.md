@@ -1,6 +1,6 @@
-# Git Extract
+# Git Extract Python3
 
-提取远程 git 泄露或本地 git 的工具
+Python3 提取远程 git 泄露或本地 git 的工具
 
 ### 目的
 
